@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: secure-vote-backend
+    env: python
+    buildCommand: pip install --upgrade pip && pip install -r backend/requirements.txt
+    startCommand: gunicorn backend.app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
