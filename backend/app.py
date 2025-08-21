@@ -6,11 +6,9 @@ import face_recognition
 
 # Paths
 backend_dir = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIR = os.path.abspath(os.path.join(backend_dir, 'frontend'))
-
-# App init
-app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='/static')
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+# The static folder is now the 'build' folder from React
+app = Flask(__name__, static_folder=os.path.join(backend_dir, 'build'), static_url_path='/')
+CORS(app, resources={r"/*": {"origins": "*"}}) # Allow all origins for simplicity in deployment
 
 # DB and temp
 DB_PATH = os.path.join(backend_dir, 'voters.db')
@@ -43,11 +41,7 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
     return response
 
-# Routes
-@app.route('/')
-def index():
-    return send_from_directory(backend_dir, 'index.html')
-
+# API Routes
 @app.route('/check_id', methods=['POST'])
 def check_id_route():
     data = request.get_json()
@@ -125,6 +119,15 @@ def verify_face_route():
 
     return jsonify({'match': bool(is_match), 'message': message})
 
+# Serve React App
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
+
+
 if __name__ == '__main__':
-    print("🌍 Flask server running at http://127.0.0.1:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(use_reloader=True, port=5000, threaded=True)
